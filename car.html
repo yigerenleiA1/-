@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>车辆识别系统</title>
+    <style>
+        body {
+            background-color: #e9f0f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: "Microsoft Yahei", sans-serif;
+        }
+        .container {
+            display: flex;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 700px;
+        }
+        .upload-section, .result-section {
+            padding: 20px;
+            width: 350px;
+        }
+        .upload-section h3, .result-section h3 {
+            text-align: center;
+            margin-top: 0;
+            color: #333;
+            font-weight: 600;
+        }
+        .upload-area {
+            border: 2px dashed #6cc;
+            border-radius: 6px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .upload-area img {
+            width: 50px;
+            height: 50px;
+            margin-bottom: 15px;
+        }
+        .upload-area p {
+            margin: 5px 0;
+            color: #666;
+            font-size: 14px;
+        }
+        .btn {
+            background-color: #3498db;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .preview-area {
+            text-align: center;
+        }
+        .preview-area p {
+            margin: 0 0 10px 0;
+            color: #666;
+            font-size: 14px;
+        }
+        .preview-area img {
+            max-width: 100%;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .result-card {
+            background-color: #f9f9f9;
+            border-radius: 6px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .result-card h4 {
+            text-align: center;
+            margin-top: 0;
+            color: #555;
+            font-weight: 500;
+        }
+        .empty-tip {
+            text-align: center;
+            color: #999;
+            padding: 30px 0;
+            font-size: 14px;
+        }
+        .info-item {
+            margin: 15px 0;
+        }
+        .info-item label {
+            display: inline-block;
+            width: 60px;
+            color: #666;
+            font-size: 14px;
+        }
+        .info-item span {
+            color: #333;
+            font-size: 14px;
+            display: inline-block;
+            width: 200px;
+            padding: 5px;
+            border-left: 3px solid #3498db;
+            padding-left: 10px;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="upload-section">
+        <h3>车辆图片上传</h3>
+        <div class="upload-area" id="uploadArea">
+            <img src="https://img.icons8.com/color/60/000000/car.png" alt="车辆图标">
+            <p>点击或拖放图片到此处上传</p>
+            <p>支持 JPG、PNG 格式</p>
+            <button class="btn" id="selectBtn">选择图片</button>
+            <input type="file" id="fileInput" accept="image/jpeg,image/png" class="hidden">
+        </div>
+        <div class="preview-area" id="previewArea">
+            <p>图片预览</p>
+            <img id="previewImg" src="" alt="图片预览" class="hidden">
+        </div>
+    </div>
+    <div class="result-section">
+        <h3>识别结果</h3>
+        <div class="result-card" id="resultCard">
+            <h4>车辆信息</h4>
+            <div class="empty-tip" id="emptyTip">请上传车辆图片以获取识别结果</div>
+            <div id="infoList" class="hidden">
+                <div class="info-item">
+                    <label>车牌号：</label>
+                    <span id="chepai"></span>
+                </div>
+                <div class="info-item">
+                    <label>年份：</label>
+                    <span id="year"></span>
+                </div>
+                <div class="info-item">
+                    <label>车型号：</label>
+                    <span id="name"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 选择图片按钮点击事件
+    const selectBtn = document.getElementById('selectBtn');
+    const fileInput = document.getElementById('fileInput');
+    selectBtn.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    // 文件选择事件
+    fileInput.addEventListener('change', handleFileSelect);
+
+    // 拖放事件
+    const uploadArea = document.getElementById('uploadArea');
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#3498db';
+    });
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.style.borderColor = '#6cc';
+    });
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#6cc';
+        if (e.dataTransfer.files.length > 0) {
+            handleFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    // 处理文件选择
+    function handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (file) {
+            handleFile(file);
+        }
+    }
+
+    // 处理文件
+    function handleFile(file) {
+        const previewImg = document.getElementById('previewImg');
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            previewImg.src = e.target.result;
+            previewImg.classList.remove('hidden');
+            // 上传图片到后端进行识别
+            uploadImage(file);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // 上传图片到后端并获取识别结果
+    function uploadImage(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // 这里替换为你的后端接口地址
+        const apiUrl = 'http://localhost:8082/car/car';
+        fetch(apiUrl, {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                // 填充识别结果
+                document.getElementById('chepai').textContent = data.chepai || '';
+                document.getElementById('year').textContent = data.year || '';
+                document.getElementById('name').textContent = data.name || '';
+                document.getElementById('emptyTip').classList.add('hidden');
+                document.getElementById('infoList').classList.remove('hidden');
+            })
+            .catch(error => {
+                console.error('识别失败:', error);
+                alert('识别失败，请稍后重试');
+            });
+    }
+</script>
+</body>
+</html>
